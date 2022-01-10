@@ -9,10 +9,9 @@ import (
 	"github.com/joeshaw/envdecode"
 	_ "github.com/joho/godotenv/autoload"
 	"github.com/maniak89/sstcloud-alice-gateway/internal/log"
+	"github.com/maniak89/sstcloud-alice-gateway/internal/services/sst"
 	"github.com/oklog/run"
 	zerolog "github.com/rs/zerolog/log"
-
-	"github.com/maniak89/sstcloud-alice-gateway/internal/sst"
 )
 
 type config struct {

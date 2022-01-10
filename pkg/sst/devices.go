@@ -13,8 +13,31 @@ import (
 type DeviceType int
 
 const (
-	DeviceTerm DeviceType = 1
+	MCS300 DeviceType = iota
+	MCS350
+	NeptunProWWiFi
+	OKElectro
+	EquationProWWiFi
+	ThermoregulatorEcoSmart25
 )
+
+func (d DeviceType) String() string {
+	switch d {
+	case MCS300:
+		return "MCS 300"
+	case MCS350:
+		return "MCS 350"
+	case NeptunProWWiFi:
+		return "Neptun ProW+WiFi"
+	case OKElectro:
+		return "OK Electro"
+	case EquationProWWiFi:
+		return "Equation ProW+WiFi"
+	case ThermoregulatorEcoSmart25:
+		return "Thermoregulator EcoSmart 25"
+	}
+	return "Unknown device"
+}
 
 type Device struct {
 	ActiveNetwork              int       `json:"active_network"`
@@ -114,7 +137,7 @@ func (c *Client) Devices(ctx context.Context, house int) ([]Device, error) {
 			continue
 		}
 		switch result[i].Type {
-		case DeviceTerm:
+		case MCS350, MCS300:
 			var parsed DeviceTermParsedConfiguration
 			if err := json.Unmarshal([]byte(result[i].ParsedConfiguration), &parsed); err != nil {
 				log.Ctx(ctx).Error().Err(err).Str("configuration", result[i].ParsedConfiguration).Msg("Failed parse additional configuration")
@@ -124,4 +147,24 @@ func (c *Client) Devices(ctx context.Context, house int) ([]Device, error) {
 		}
 	}
 	return result, nil
+}
+
+func (c *Client) Temperature(ctx context.Context, house, device, temperature int) error {
+	return c.sendRequest(ctx, http.MethodPost, fmt.Sprintf("/houses/%d/devices/%d/temperature/", house, device), struct {
+		TemperatureManual int `json:"temperature_manual"`
+	}{
+		TemperatureManual: temperature,
+	}, nil)
+}
+
+func (c *Client) PowerStatus(ctx context.Context, house, device int, power bool) error {
+	status := DeviceStatusOff
+	if power {
+		status = DeviceStatusOn
+	}
+	return c.sendRequest(ctx, http.MethodPost, fmt.Sprintf("/houses/%d/devices/%d/status/", house, device), struct {
+		Status DeviceStatus `json:"status"`
+	}{
+		Status: status,
+	}, nil)
 }
