@@ -9,12 +9,11 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/jwtauth/v5"
+	"github.com/maniak89/sstcloud-alice-gateway/internal/models/common"
 	"github.com/maniak89/sstcloud-alice-gateway/internal/services/rest/handlers/oauth2"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/hlog"
 	"github.com/rs/zerolog/log"
-
-	"github.com/maniak89/sstcloud-alice-gateway/internal/models"
 )
 
 type service struct {
@@ -24,8 +23,10 @@ type service struct {
 }
 
 type DeviceProvider interface {
-	Devices(ctx context.Context) ([]models.Device, error)
+	Devices(ctx context.Context) ([]common.Device, error)
 }
+
+const xRequestID = "X-Request-Id"
 
 func New(ctx context.Context, config Config, log zerolog.Logger, provider DeviceProvider) (*service, error) {
 	r := chi.NewRouter()
@@ -33,9 +34,9 @@ func New(ctx context.Context, config Config, log zerolog.Logger, provider Device
 		hlog.NewHandler(log),
 		hlog.MethodHandler("method"),
 		hlog.URLHandler("url"),
-		hlog.RequestIDHandler("x_request_id", "X-Request-Id"),
+		hlog.RequestIDHandler("x_request_id", xRequestID),
 		hlog.AccessHandler(func(r *http.Request, status, size int, duration time.Duration) {
-			zerolog.Ctx(ctx).Trace().Str("method", r.Method).Str("url", r.URL.String()).Str("x_request_id", r.Header.Get("X-Request-Id")).Int("status", status).Int("size", size).Dur("duration", duration).Msg("request processed")
+			zerolog.Ctx(ctx).Trace().Str("method", r.Method).Str("url", r.URL.String()).Str("x_request_id", r.Header.Get(xRequestID)).Int("status", status).Int("size", size).Dur("duration", duration).Msg("request processed")
 		}),
 		middleware.Recoverer,
 	)

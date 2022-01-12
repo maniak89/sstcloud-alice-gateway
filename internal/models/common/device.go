@@ -1,4 +1,4 @@
-package models
+package common
 
 type Device struct {
 	ID               string

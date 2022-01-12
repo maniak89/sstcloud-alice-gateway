@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/maniak89/sstcloud-alice-gateway/internal/models"
+	"github.com/maniak89/sstcloud-alice-gateway/internal/models/common"
 	"github.com/maniak89/sstcloud-alice-gateway/pkg/sst"
 	"github.com/rs/zerolog/log"
 )
@@ -48,13 +48,13 @@ func (c *Client) Init(ctx context.Context) error {
 	return err
 }
 
-func (c *Client) Devices(ctx context.Context) ([]models.Device, error) {
+func (c *Client) Devices(ctx context.Context) ([]common.Device, error) {
 	houses, err := c.cl.Houses(ctx)
 	if err != nil {
 		return nil, err
 	}
 	globalDevices := map[int]struct{}{}
-	var result []models.Device
+	var result []common.Device
 	for _, house := range houses {
 		devices, err := c.cl.Devices(ctx, house.ID)
 		if err != nil {
@@ -73,14 +73,14 @@ func (c *Client) Devices(ctx context.Context) ([]models.Device, error) {
 			}
 
 			globalDevices[device.ID] = struct{}{}
-			result = append(result, models.Device{
+			result = append(result, common.Device{
 				ID:   fmt.Sprintf("%d_%d", house.ID, device.ID),
 				Name: device.Name,
 				AdditionalFields: map[string]string{
 					house_id:  strconv.Itoa(house.ID),
 					device_id: strconv.Itoa(device.ID),
 				},
-				Tempometer: &models.Tempometer{
+				Tempometer: &common.Tempometer{
 					Degressess: map[string]int{
 						tempAir:    device.TermParsedConfiguration.CurrentTemperature.TemperatureAir,
 						tempSensor: device.TermParsedConfiguration.CurrentTemperature.TemperatureFloor,
@@ -93,7 +93,7 @@ func (c *Client) Devices(ctx context.Context) ([]models.Device, error) {
 	return result, nil
 }
 
-func (c *Client) SetTemperature(ctx context.Context, device models.Device, temp int) error {
+func (c *Client) SetTemperature(ctx context.Context, device common.Device, temp int) error {
 	houseID, deviceID, err := extractAdditionalFields(ctx, device)
 	if err != nil {
 		return err
@@ -107,7 +107,7 @@ func (c *Client) SetTemperature(ctx context.Context, device models.Device, temp 
 	return nil
 }
 
-func (c *Client) PowerStatus(ctx context.Context, device models.Device, power bool) error {
+func (c *Client) PowerStatus(ctx context.Context, device common.Device, power bool) error {
 	houseID, deviceID, err := extractAdditionalFields(ctx, device)
 	if err != nil {
 		return err
@@ -118,7 +118,7 @@ func (c *Client) PowerStatus(ctx context.Context, device models.Device, power bo
 	return nil
 }
 
-func extractAdditionalFields(ctx context.Context, device models.Device) (int, int, error) {
+func extractAdditionalFields(ctx context.Context, device common.Device) (int, int, error) {
 	logger := log.Ctx(ctx).With().Str("device_id", device.ID).Str("name", device.Name).Logger()
 	houseId, err := strconv.Atoi(device.AdditionalFields[house_id])
 	if err != nil {
