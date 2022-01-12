@@ -5,3 +5,6 @@ services:
       context: ..
     env_file:
       ../.env
+    # entrypoint: ["/srv/dlv", "--listen=:40000", "--headless=true", "--api-version=2", "--accept-multiclient", "exec", "/srv/sstcloud-alice-gateway"]
+    # ports:
+    #   - "40000:40000"
