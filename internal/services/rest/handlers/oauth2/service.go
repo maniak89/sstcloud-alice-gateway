@@ -39,7 +39,10 @@ func (s *service) Init(ctx context.Context) error {
 	}
 	manager := manage.NewDefaultManager()
 	tokenStore, err := store.NewFileTokenStore(s.config.TokenFile)
-	logger.Error().Err(err).Msg("Failed init token store")
+	if err != nil {
+		logger.Error().Err(err).Msg("Failed init token store")
+		return err
+	}
 	manager.MapTokenStorage(tokenStore)
 
 	manager.MapAccessGenerate(generates.NewJWTAccessGenerate("", []byte(s.config.Key), jwt.GetSigningMethod(s.config.AuthAlgo)))
@@ -59,7 +62,6 @@ func (s *service) Init(ctx context.Context) error {
 	s.server = srv
 	srv.SetAllowGetAccessRequest(true)
 	srv.SetClientInfoHandler(server.ClientFormHandler)
-	srv.SetUserAuthorizationHandler(s.userAuthorizeHandler)
 	srv.SetInternalErrorHandler(func(err error) (re *errors.Response) {
 		logger.Error().Err(err).Msg("internal error")
 		return
@@ -67,6 +69,15 @@ func (s *service) Init(ctx context.Context) error {
 
 	srv.SetResponseErrorHandler(func(re *errors.Response) {
 		logger.Error().Err(re.Error).Msg("response error")
+	})
+
+	srv.SetUserAuthorizationHandler(func(w http.ResponseWriter, r *http.Request) (userID string, err error) {
+		userID = r.URL.Query().Get("client_id")
+		if userID == "" {
+			return "", errors.New("empty client id")
+		}
+		w.WriteHeader(http.StatusOK)
+		return userID, nil
 	})
 
 	return nil
@@ -97,15 +108,6 @@ func (s *service) Verify(handler http.Handler) http.Handler {
 		r = r.WithContext(jwtauth.NewContext(r.Context(), tokenWrapper{token}, nil))
 		handler.ServeHTTP(w, r)
 	})
-}
-
-func (s *service) userAuthorizeHandler(w http.ResponseWriter, r *http.Request) (string, error) {
-	userID := r.URL.Query().Get("client_id")
-	if userID == "" {
-		return "", errors.New("empty client id")
-	}
-	w.WriteHeader(http.StatusOK)
-	return userID, nil
 }
 
 type tokenWrapper struct {
