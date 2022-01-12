@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -30,6 +31,12 @@ func New(ctx context.Context, config Config, log zerolog.Logger, provider Device
 	r := chi.NewRouter()
 	r.Use(
 		hlog.NewHandler(log),
+		hlog.MethodHandler("method"),
+		hlog.URLHandler("url"),
+		hlog.RequestIDHandler("x_request_id", "X-Request-Id"),
+		hlog.AccessHandler(func(r *http.Request, status, size int, duration time.Duration) {
+			zerolog.Ctx(ctx).Trace().Int("status", status).Int("size", size).Dur("duration", duration).Msg("request processed")
+		}),
 		middleware.Recoverer,
 	)
 	service := service{
