@@ -84,7 +84,7 @@ func (c *Client) Devices(ctx context.Context) ([]common.Device, error) {
 					Degressess: device.TermParsedConfiguration.CurrentTemperature.TemperatureFloor,
 				},
 				Model:     device.Type.String(),
-				Enabled:   device.IsActive,
+				Enabled:   device.TermParsedConfiguration.Settings.Status == sst.DeviceStatusOn,
 				Connected: device.IsConnected,
 			})
 		}
