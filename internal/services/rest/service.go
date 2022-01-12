@@ -7,6 +7,8 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/go-chi/jwtauth/v5"
+	"github.com/maniak89/sstcloud-alice-gateway/internal/services/rest/handlers/oauth2"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/hlog"
 	"github.com/rs/zerolog/log"
@@ -24,7 +26,7 @@ type DeviceProvider interface {
 	Devices(ctx context.Context) ([]models.Device, error)
 }
 
-func New(config Config, log zerolog.Logger, provider DeviceProvider) *service {
+func New(ctx context.Context, config Config, log zerolog.Logger, provider DeviceProvider) (*service, error) {
 	r := chi.NewRouter()
 	r.Use(
 		hlog.NewHandler(log),
@@ -35,10 +37,33 @@ func New(config Config, log zerolog.Logger, provider DeviceProvider) *service {
 		deviceProvider: provider,
 		srv:            &http.Server{Addr: config.Address, Handler: r},
 	}
+	oauthSrv := oauth2.New(config.OAUTH2)
+	if err := oauthSrv.Init(ctx); err != nil {
+		return nil, err
+	}
+	if config.OAUTH2.Enabled {
+		r.Route("/oauth2", func(r chi.Router) {
+			r.Mount("/authorize", http.HandlerFunc(oauthSrv.Authorize))
+			r.Mount("/token", http.HandlerFunc(oauthSrv.Token))
+		})
+	}
+	key, err := config.OAUTH2.GetAuthKey(ctx)
+	if err != nil {
+		return nil, err
+	}
 	r.Route("/v1.0", func(r chi.Router) {
+		if config.OAUTH2.Enabled {
+			r.Use(oauthSrv.Verify)
+		} else {
+			r.Use(jwtauth.Verifier(jwtauth.New(config.OAUTH2.AuthAlgo, nil, key)))
+		}
+		r.Use(
+			jwtauth.Authenticator,
+		)
 		r.Head("/", service.Health)
 	})
-	return &service
+
+	return &service, nil
 }
 
 func (s *service) Run(ctx context.Context, ready func()) error {

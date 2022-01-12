@@ -58,7 +58,10 @@ func main() {
 		logger.Fatal().Err(err).Msg("Failed init sst client")
 	}
 
-	restService := rest.New(cfg.Rest, logger.With().Str("role", "rest").Logger(), sstClient)
+	restService, err := rest.New(ctx, cfg.Rest, logger.With().Str("role", "rest").Logger(), sstClient)
+	if err != nil {
+		logger.Fatal().Err(err).Msg("Failed create rest service")
+	}
 	if err := orderRunner.SetupService(ctx, restService, "rest", g); err != nil {
 		logger.Fatal().Err(err).Msg("Failed setup rest service")
 	}
