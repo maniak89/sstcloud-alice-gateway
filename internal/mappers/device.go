@@ -28,6 +28,10 @@ func DeviceToAlice(device common.Device) alice.Device {
 				Parameters: alice.CapabilityOnOffParameters{
 					Split: false,
 				},
+				State: alice.CapabilityOnOffState{
+					Instance: alice.CapabilityOnOffInstanceOn,
+					Value:    device.Enabled,
+				},
 			},
 			alice.CapabilityRange{
 				Type:        alice.CapabilityTypeRange,
@@ -41,6 +45,10 @@ func DeviceToAlice(device common.Device) alice.Device {
 						Min:       minTemp,
 						Precision: 1,
 					},
+				},
+				State: alice.CapabilityRangeStateTemperature{
+					Instance: alice.CapabilityRangeInstanceTemperature,
+					Value:    float32(device.Tempometer.Degressess),
 				},
 			},
 		}

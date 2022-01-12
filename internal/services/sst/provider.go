@@ -83,7 +83,9 @@ func (c *Client) Devices(ctx context.Context) ([]common.Device, error) {
 				Tempometer: &common.Tempometer{
 					Degressess: device.TermParsedConfiguration.CurrentTemperature.TemperatureFloor,
 				},
-				Model: device.Type.String(),
+				Model:     device.Type.String(),
+				Enabled:   device.IsActive,
+				Connected: device.IsConnected,
 			})
 		}
 	}

@@ -36,6 +36,7 @@ type CapabilityOnOff struct {
 	Type        CapabilityType            `json:"type"`
 	Retrievable bool                      `json:"retrievable"`
 	Parameters  CapabilityOnOffParameters `json:"parameters"`
+	State       CapabilityOnOffState      `json:"state"`
 }
 
 type CapabilityOnOffParameters struct {
@@ -58,6 +59,12 @@ type CapabilityRange struct {
 	Type        CapabilityType `json:"type"`
 	Retrievable bool           `json:"retrievable"`
 	Parameters  interface{}    `json:"parameters"`
+	State       interface{}    `json:"state"`
+}
+
+type CapabilityRangeStateTemperature struct {
+	Instance CapabilityRangeInstance `json:"instance"`
+	Value    float32                 `json:"value"`
 }
 
 type CapabilityRangeParametersTemperature struct {
