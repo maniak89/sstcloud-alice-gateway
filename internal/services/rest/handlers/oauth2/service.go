@@ -13,6 +13,7 @@ import (
 	"github.com/go-oauth2/oauth2/v4/models"
 	"github.com/go-oauth2/oauth2/v4/server"
 	"github.com/go-oauth2/oauth2/v4/store"
+	"github.com/go-session/session"
 	"github.com/golang-jwt/jwt"
 	jwt2 "github.com/lestrrat-go/jwx/jwt"
 	"github.com/rs/zerolog/log"
@@ -59,6 +60,7 @@ func (s *service) Init(ctx context.Context) error {
 	s.server = srv
 	srv.SetAllowGetAccessRequest(true)
 	srv.SetClientInfoHandler(server.ClientFormHandler)
+	srv.SetUserAuthorizationHandler(s.userAuthorizeHandler)
 
 	srv.SetInternalErrorHandler(func(err error) (re *errors.Response) {
 		logger.Error().Err(err).Msg("internal error")
@@ -97,6 +99,32 @@ func (s *service) Verify(handler http.Handler) http.Handler {
 		r = r.WithContext(jwtauth.NewContext(r.Context(), tokenWrapper{token}, nil))
 		handler.ServeHTTP(w, r)
 	})
+}
+
+func (s *service) userAuthorizeHandler(w http.ResponseWriter, r *http.Request) (userID string, err error) {
+	store, err := session.Start(r.Context(), w, r)
+	if err != nil {
+		return
+	}
+
+	uid, ok := store.Get("LoggedInUserID")
+	if !ok {
+		if r.Form == nil {
+			r.ParseForm()
+		}
+
+		store.Set("ReturnUri", r.Form)
+		store.Save()
+
+		w.Header().Set("Location", "/login")
+		w.WriteHeader(http.StatusFound)
+		return
+	}
+
+	userID = uid.(string)
+	store.Delete("LoggedInUserID")
+	store.Save()
+	return
 }
 
 type tokenWrapper struct {
