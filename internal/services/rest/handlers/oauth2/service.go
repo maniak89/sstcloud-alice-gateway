@@ -13,7 +13,6 @@ import (
 	"github.com/go-oauth2/oauth2/v4/models"
 	"github.com/go-oauth2/oauth2/v4/server"
 	"github.com/go-oauth2/oauth2/v4/store"
-	"github.com/go-session/session"
 	"github.com/golang-jwt/jwt"
 	jwt2 "github.com/lestrrat-go/jwx/jwt"
 	"github.com/rs/zerolog/log"
@@ -61,7 +60,6 @@ func (s *service) Init(ctx context.Context) error {
 	srv.SetAllowGetAccessRequest(true)
 	srv.SetClientInfoHandler(server.ClientFormHandler)
 	srv.SetUserAuthorizationHandler(s.userAuthorizeHandler)
-
 	srv.SetInternalErrorHandler(func(err error) (re *errors.Response) {
 		logger.Error().Err(err).Msg("internal error")
 		return
@@ -101,30 +99,13 @@ func (s *service) Verify(handler http.Handler) http.Handler {
 	})
 }
 
-func (s *service) userAuthorizeHandler(w http.ResponseWriter, r *http.Request) (userID string, err error) {
-	store, err := session.Start(r.Context(), w, r)
-	if err != nil {
-		return
+func (s *service) userAuthorizeHandler(w http.ResponseWriter, r *http.Request) (string, error) {
+	userID := r.URL.Query().Get("client_id")
+	if userID == "" {
+		return "", errors.New("empty client id")
 	}
-
-	uid, ok := store.Get("LoggedInUserID")
-	if !ok {
-		if r.Form == nil {
-			r.ParseForm()
-		}
-
-		store.Set("ReturnUri", r.Form)
-		store.Save()
-
-		w.Header().Set("Location", "/login")
-		w.WriteHeader(http.StatusFound)
-		return
-	}
-
-	userID = uid.(string)
-	store.Delete("LoggedInUserID")
-	store.Save()
-	return
+	w.WriteHeader(http.StatusOK)
+	return userID, nil
 }
 
 type tokenWrapper struct {
