@@ -9,5 +9,5 @@ type Device struct {
 }
 
 type Tempometer struct {
-	Degressess map[string]int
+	Degressess int
 }

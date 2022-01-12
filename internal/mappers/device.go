@@ -52,6 +52,10 @@ func DeviceToAlice(device common.Device) alice.Device {
 					Instance: alice.PropertiesFloatParametersInstanceTemperature,
 					Unit:     alice.UnitCelsius,
 				},
+				State: alice.PropertiesFloatState{
+					Instance: alice.PropertiesFloatParametersInstanceTemperature,
+					Value:    float32(device.Tempometer.Degressess),
+				},
 			},
 		}
 	}

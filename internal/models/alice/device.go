@@ -92,10 +92,11 @@ const (
 )
 
 type PropertiesFloat struct {
-	Type        PropertiesType `json:"type"`
-	Retrievable bool           `json:"retrievable,omitempty"`
-	Reportable  bool           `json:"reportable,omitempty"`
-	Parameters  interface{}    `json:"parameters"`
+	Type        PropertiesType       `json:"type"`
+	Retrievable bool                 `json:"retrievable,omitempty"`
+	Reportable  bool                 `json:"reportable,omitempty"`
+	Parameters  interface{}          `json:"parameters"`
+	State       PropertiesFloatState `json:"state"`
 }
 
 type PropertiesFloatParametersInstance string
@@ -107,4 +108,9 @@ const (
 type PropertiesFloatParametersTemperature struct {
 	Instance PropertiesFloatParametersInstance `json:"instance"`
 	Unit     UnitTemperature                   `json:"unit"`
+}
+
+type PropertiesFloatState struct {
+	Instance PropertiesFloatParametersInstance `json:"instance"`
+	Value    float32                           `json:"value"`
 }

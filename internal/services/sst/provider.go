@@ -81,10 +81,7 @@ func (c *Client) Devices(ctx context.Context) ([]common.Device, error) {
 					device_id: strconv.Itoa(device.ID),
 				},
 				Tempometer: &common.Tempometer{
-					Degressess: map[string]int{
-						tempAir:    device.TermParsedConfiguration.CurrentTemperature.TemperatureAir,
-						tempSensor: device.TermParsedConfiguration.CurrentTemperature.TemperatureFloor,
-					},
+					Degressess: device.TermParsedConfiguration.CurrentTemperature.TemperatureFloor,
 				},
 				Model: device.Type.String(),
 			})
