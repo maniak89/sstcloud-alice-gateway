@@ -9,6 +9,8 @@ import (
 	"github.com/joeshaw/envdecode"
 	_ "github.com/joho/godotenv/autoload"
 	"github.com/maniak89/sstcloud-alice-gateway/internal/log"
+	"github.com/maniak89/sstcloud-alice-gateway/internal/services"
+	"github.com/maniak89/sstcloud-alice-gateway/internal/services/rest"
 	"github.com/maniak89/sstcloud-alice-gateway/internal/services/sst"
 	"github.com/oklog/run"
 	zerolog "github.com/rs/zerolog/log"
@@ -17,6 +19,7 @@ import (
 type config struct {
 	Logger log.Config
 	SST    sst.Config
+	Rest   rest.Config
 }
 
 const signalChLen = 10
@@ -48,12 +51,17 @@ func main() {
 		})
 	}
 
+	orderRunner := services.OrderRunner{}
+
 	sstClient := sst.New(cfg.SST)
 	if err := sstClient.Init(ctx); err != nil {
 		logger.Fatal().Err(err).Msg("Failed init sst client")
 	}
 
-	sstClient.Devices(ctx)
+	restService := rest.New(cfg.Rest, logger.With().Str("role", "rest").Logger(), sstClient)
+	if err := orderRunner.SetupService(ctx, restService, "rest", g); err != nil {
+		logger.Fatal().Err(err).Msg("Failed setup rest service")
+	}
 
 	logger.Info().Msg("Running the service...")
 	if err := g.Run(); err != nil {
