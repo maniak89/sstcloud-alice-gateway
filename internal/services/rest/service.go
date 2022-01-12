@@ -68,6 +68,7 @@ func New(ctx context.Context, config Config, log zerolog.Logger, provider Device
 			jwtauth.Authenticator,
 		)
 		r.Head("/", service.Health)
+		r.Get("/user/devices", service.Devices)
 	})
 
 	return &service, nil
