@@ -1,6 +1,8 @@
 package mappers
 
 import (
+	"strings"
+
 	"github.com/maniak89/sstcloud-alice-gateway/internal/models/alice"
 	"github.com/maniak89/sstcloud-alice-gateway/internal/models/common"
 )
@@ -8,6 +10,12 @@ import (
 const (
 	minTemp = 12
 	maxTemp = 45
+)
+
+const (
+	AdditionalSensor      = "sensor"
+	AdditionalSensorAir   = "air"
+	AdditionalSensorFloor = "floor"
 )
 
 func DeviceToAlice(device common.Device) []alice.Device {
@@ -55,13 +63,15 @@ func DeviceToAlice(device common.Device) []alice.Device {
 		}
 
 		additionalDevices = append(additionalDevices, alice.Device{
-			ID:   device.ID + "_air",
+			ID:   createDeviceID(device.ID, AdditionalSensorAir),
 			Name: device.Name + " температура воздуха",
 			DeviceInfo: &alice.DeviceInfo{
 				Model: device.Model,
 			},
-			CustomData: device.AdditionalFields,
-			Type:       alice.DeviceTypeSensor,
+			CustomData: mapMux(device.AdditionalFields, map[string]string{
+				AdditionalSensor: AdditionalSensorAir,
+			}),
+			Type: alice.DeviceTypeSensor,
 			Properties: []interface{}{
 				alice.PropertiesFloat{
 					Type:        alice.PropertiesTypeFloat,
@@ -77,13 +87,15 @@ func DeviceToAlice(device common.Device) []alice.Device {
 				},
 			},
 		}, alice.Device{
-			ID:   device.ID + "_floor",
+			ID:   createDeviceID(device.ID, AdditionalSensorFloor),
 			Name: device.Name + " температура пола",
 			DeviceInfo: &alice.DeviceInfo{
 				Model: device.Model,
 			},
-			CustomData: device.AdditionalFields,
-			Type:       alice.DeviceTypeSensor,
+			CustomData: mapMux(device.AdditionalFields, map[string]string{
+				AdditionalSensor: AdditionalSensorFloor,
+			}),
+			Type: alice.DeviceTypeSensor,
 			Properties: []interface{}{
 				alice.PropertiesFloat{
 					Type:        alice.PropertiesTypeFloat,
@@ -101,4 +113,31 @@ func DeviceToAlice(device common.Device) []alice.Device {
 		})
 	}
 	return append([]alice.Device{result}, additionalDevices...)
+}
+
+func mapMux(m1, m2 map[string]string) map[string]string {
+	result := map[string]string{}
+	for k, v := range m1 {
+		result[k] = v
+	}
+	for k, v := range m2 {
+		result[k] = v
+	}
+	return result
+}
+
+func ExtractDeviceID(str string) string {
+	parts := strings.Split(str, "_")
+	if len(parts) < 2 {
+		return str
+	}
+	lastPart := parts[len(parts)-1]
+	if lastPart == AdditionalSensorFloor || lastPart == AdditionalSensorAir {
+		return strings.Join(parts[0:len(parts)-1], "_")
+	}
+	return str
+}
+
+func createDeviceID(str1, str2 string) string {
+	return strings.Join([]string{str1, str2}, "_")
 }

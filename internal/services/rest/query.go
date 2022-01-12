@@ -33,10 +33,16 @@ func (s *service) Query(w http.ResponseWriter, r *http.Request) {
 	}
 	for _, reqDev := range req.Devices {
 		for _, dev := range devices {
-			if dev.ID != reqDev.ID {
+			if dev.ID != mappers.ExtractDeviceID(reqDev.ID) {
 				continue
 			}
-			aliceDevices.Devices = append(aliceDevices.Devices, mappers.DeviceToAlice(dev)...)
+			newDevices := mappers.DeviceToAlice(dev)
+			for _, newDev := range newDevices {
+				if newDev.ID != reqDev.ID {
+					continue
+				}
+				aliceDevices.Devices = append(aliceDevices.Devices, newDev)
+			}
 			break
 		}
 	}
