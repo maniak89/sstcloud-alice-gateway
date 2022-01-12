@@ -23,10 +23,10 @@ func (s *service) Devices(w http.ResponseWriter, r *http.Request) {
 
 	aliceDevices := alice.Devices{
 		UserID:  token.Subject(),
-		Devices: make([]alice.Device, len(devices)),
+		Devices: make([]alice.Device, 0, len(devices)),
 	}
-	for i, d := range devices {
-		aliceDevices.Devices[i] = mappers.DeviceToAlice(d)
+	for _, d := range devices {
+		aliceDevices.Devices = append(aliceDevices.Devices, mappers.DeviceToAlice(d)...)
 	}
 
 	if err := json.NewEncoder(w).Encode(alice.Response{

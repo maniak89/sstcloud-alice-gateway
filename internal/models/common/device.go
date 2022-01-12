@@ -11,5 +11,7 @@ type Device struct {
 }
 
 type Tempometer struct {
-	Degressess int
+	SetDegreesFloor int
+	DegreesFloor    int
+	DegreesAir      int
 }

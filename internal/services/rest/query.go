@@ -36,7 +36,7 @@ func (s *service) Query(w http.ResponseWriter, r *http.Request) {
 			if dev.ID != reqDev.ID {
 				continue
 			}
-			aliceDevices.Devices = append(aliceDevices.Devices, mappers.DeviceToAlice(dev))
+			aliceDevices.Devices = append(aliceDevices.Devices, mappers.DeviceToAlice(dev)...)
 			break
 		}
 	}

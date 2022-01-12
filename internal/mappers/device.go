@@ -10,7 +10,7 @@ const (
 	maxTemp = 45
 )
 
-func DeviceToAlice(device common.Device) alice.Device {
+func DeviceToAlice(device common.Device) []alice.Device {
 	result := alice.Device{
 		ID:   device.ID,
 		Name: device.Name,
@@ -19,6 +19,7 @@ func DeviceToAlice(device common.Device) alice.Device {
 		},
 		CustomData: device.AdditionalFields,
 	}
+	var additionalDevices []alice.Device
 	if device.Tempometer != nil {
 		result.Type = alice.DeviceTypeThermostat
 		result.Capabilities = []interface{}{
@@ -48,24 +49,56 @@ func DeviceToAlice(device common.Device) alice.Device {
 				},
 				State: alice.CapabilityRangeStateTemperature{
 					Instance: alice.CapabilityRangeInstanceTemperature,
-					Value:    float32(device.Tempometer.Degressess),
+					Value:    float32(device.Tempometer.SetDegreesFloor),
 				},
 			},
 		}
-		result.Properties = []interface{}{
-			alice.PropertiesFloat{
-				Type:        alice.PropertiesTypeFloat,
-				Retrievable: true,
-				Parameters: alice.PropertiesFloatParametersTemperature{
-					Instance: alice.PropertiesFloatParametersInstanceTemperature,
-					Unit:     alice.UnitCelsius,
-				},
-				State: alice.PropertiesFloatState{
-					Instance: alice.PropertiesFloatParametersInstanceTemperature,
-					Value:    float32(device.Tempometer.Degressess),
+
+		additionalDevices = append(additionalDevices, alice.Device{
+			ID:   device.ID + "_air",
+			Name: device.Name + " температура воздуха",
+			DeviceInfo: &alice.DeviceInfo{
+				Model: device.Model,
+			},
+			CustomData: device.AdditionalFields,
+			Type:       alice.DeviceTypeSensor,
+			Properties: []interface{}{
+				alice.PropertiesFloat{
+					Type:        alice.PropertiesTypeFloat,
+					Retrievable: true,
+					Parameters: alice.PropertiesFloatParametersTemperature{
+						Instance: alice.PropertiesFloatParametersInstanceTemperature,
+						Unit:     alice.UnitCelsius,
+					},
+					State: alice.PropertiesFloatState{
+						Instance: alice.PropertiesFloatParametersInstanceTemperature,
+						Value:    float32(device.Tempometer.DegreesAir),
+					},
 				},
 			},
-		}
+		}, alice.Device{
+			ID:   device.ID + "_floor",
+			Name: device.Name + " температура пола",
+			DeviceInfo: &alice.DeviceInfo{
+				Model: device.Model,
+			},
+			CustomData: device.AdditionalFields,
+			Type:       alice.DeviceTypeSensor,
+			Properties: []interface{}{
+				alice.PropertiesFloat{
+					Type:        alice.PropertiesTypeFloat,
+					Retrievable: true,
+					Parameters: alice.PropertiesFloatParametersTemperature{
+						Instance: alice.PropertiesFloatParametersInstanceTemperature,
+						Unit:     alice.UnitCelsius,
+					},
+					State: alice.PropertiesFloatState{
+						Instance: alice.PropertiesFloatParametersInstanceTemperature,
+						Value:    float32(device.Tempometer.DegreesFloor),
+					},
+				},
+			},
+		})
 	}
-	return result
+	return append([]alice.Device{result}, additionalDevices...)
 }

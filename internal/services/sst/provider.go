@@ -13,9 +13,6 @@ import (
 const (
 	house_id  = "house_id"
 	device_id = "device_id"
-
-	tempAir    = "воздуха"
-	tempSensor = "пола"
 )
 
 type Config struct {
@@ -81,7 +78,9 @@ func (c *Client) Devices(ctx context.Context) ([]common.Device, error) {
 					device_id: strconv.Itoa(device.ID),
 				},
 				Tempometer: &common.Tempometer{
-					Degressess: device.TermParsedConfiguration.CurrentTemperature.TemperatureFloor,
+					DegreesFloor:    device.TermParsedConfiguration.CurrentTemperature.TemperatureFloor,
+					DegreesAir:      device.TermParsedConfiguration.CurrentTemperature.TemperatureAir,
+					SetDegreesFloor: device.TermParsedConfiguration.Settings.TemperatureManual,
 				},
 				Model:     device.Type.String(),
 				Enabled:   device.TermParsedConfiguration.Settings.Status == sst.DeviceStatusOn,

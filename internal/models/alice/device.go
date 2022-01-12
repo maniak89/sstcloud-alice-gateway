@@ -4,6 +4,7 @@ type DeviceType string
 
 const (
 	DeviceTypeThermostat DeviceType = "devices.types.thermostat"
+	DeviceTypeSensor     DeviceType = "devices.types.sensor"
 )
 
 type Device struct {
