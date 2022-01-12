@@ -76,7 +76,6 @@ func (s *service) Init(ctx context.Context) error {
 		if userID == "" {
 			return "", errors.New("empty client id")
 		}
-		w.WriteHeader(http.StatusOK)
 		return userID, nil
 	})
 
