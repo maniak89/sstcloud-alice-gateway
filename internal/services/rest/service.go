@@ -69,7 +69,11 @@ func New(ctx context.Context, config Config, log zerolog.Logger, provider Device
 			jwtauth.Authenticator,
 		)
 		r.Head("/", service.Health)
-		r.Get("/user/devices", service.Devices)
+		r.Route("/user/devices", func(r chi.Router) {
+			r.Get("/", service.Devices)
+			r.Post("/query", service.Query)
+			r.Post("/action", service.Action)
+		})
 	})
 
 	return &service, nil
