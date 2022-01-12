@@ -35,7 +35,7 @@ func New(ctx context.Context, config Config, log zerolog.Logger, provider Device
 		hlog.URLHandler("url"),
 		hlog.RequestIDHandler("x_request_id", "X-Request-Id"),
 		hlog.AccessHandler(func(r *http.Request, status, size int, duration time.Duration) {
-			zerolog.Ctx(ctx).Trace().Int("status", status).Int("size", size).Dur("duration", duration).Msg("request processed")
+			zerolog.Ctx(ctx).Trace().Str("method", r.Method).Str("url", r.URL.String()).Str("x_request_id", r.Header.Get("X-Request-Id")).Int("status", status).Int("size", size).Dur("duration", duration).Msg("request processed")
 		}),
 		middleware.Recoverer,
 	)
