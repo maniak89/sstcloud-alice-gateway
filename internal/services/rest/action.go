@@ -65,9 +65,9 @@ func (s *service) Action(w http.ResponseWriter, r *http.Request) {
 							ErrorDescription: fmt.Sprintf("unknown action %s", capability.State.Instance),
 						}
 					} else {
-						value := dev.Tempometer.SetDegreesFloor
+						value := int(capability.State.Value.(float64))
 						if capability.State.Relative {
-							value += int(capability.State.Value.(float64))
+							value = dev.Tempometer.SetDegreesFloor + int(capability.State.Value.(float64))
 						}
 						if value > mappers.MaxTemp || value < mappers.MinTemp {
 							actionResult = alice.ActionResult{
