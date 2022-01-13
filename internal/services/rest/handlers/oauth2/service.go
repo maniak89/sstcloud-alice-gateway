@@ -31,11 +31,11 @@ func New(config Config) *service {
 
 func (s *service) Init(ctx context.Context) error {
 	logger := log.Ctx(ctx)
-	if !s.config.Enabled {
-		return nil
-	}
 	if err := s.config.Validate(); err != nil {
 		return err
+	}
+	if !s.config.Enabled {
+		return nil
 	}
 	manager := manage.NewDefaultManager()
 	tokenStore, err := store.NewFileTokenStore(s.config.TokenFile)

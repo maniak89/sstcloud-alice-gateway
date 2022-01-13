@@ -10,7 +10,7 @@ import (
 
 type Config struct {
 	Enabled               bool   `env:"OAUTH2_ENABLED,default=false"`
-	Key                   string `env:"OAUTH2_KEY"`
+	Key                   string `env:"OAUTH2_KEY,required"`
 	AuthAlgo              string `env:"OAUTH2_JWT_ALGO,default=HS256"`
 	AuthVerifyKeyInBase64 bool   `env:"OAUTH2_KEY_IN_BASE64"`
 	UserID                string `env:"OAUTH2_USER_ID"`
@@ -22,6 +22,9 @@ type Config struct {
 func (c Config) Validate() error {
 	if c.Key == "" {
 		return errors.New("empty OAUTH2_KEY")
+	}
+	if !c.Enabled {
+		return nil
 	}
 	if c.UserID == "" {
 		return errors.New("empty OAUTH2_USER_ID")
