@@ -8,8 +8,8 @@ import (
 )
 
 const (
-	minTemp = 12
-	maxTemp = 45
+	MinTemp = 12
+	MaxTemp = 45
 )
 
 const (
@@ -50,8 +50,8 @@ func DeviceToAlice(device common.Device) []alice.Device {
 					Unit:         alice.UnitCelsius,
 					RandomAccess: true,
 					Range: alice.CapabilityRangeParametersRange{
-						Max:       maxTemp,
-						Min:       minTemp,
+						Max:       MaxTemp,
+						Min:       MinTemp,
 						Precision: 1,
 					},
 				},
@@ -140,4 +140,11 @@ func ExtractDeviceID(str string) string {
 
 func createDeviceID(str1, str2 string) string {
 	return strings.Join([]string{str1, str2}, "_")
+}
+
+func DeviceFromAlice(device alice.DeviceRequest) common.Device {
+	return common.Device{
+		ID:               device.ID,
+		AdditionalFields: device.CustomData,
+	}
 }

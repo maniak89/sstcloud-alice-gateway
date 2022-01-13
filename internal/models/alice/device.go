@@ -33,6 +33,37 @@ const (
 	CapabilityTypeRange CapabilityType = "devices.capabilities.range"
 )
 
+type ActionResultStatus string
+
+const (
+	ActionResultStatusDone  ActionResultStatus = "DONE"
+	ActionResultStatusError ActionResultStatus = "ERROR"
+)
+
+type ErrorCode string
+
+const (
+	ErrorCodeDeviceUnreachable ErrorCode = "DEVICE_UNREACHABLE"
+	ErrorCodeInvalidAction     ErrorCode = "INVALID_ACTION"
+	ErrorCodeInvalidValue      ErrorCode = "INVALID_VALUE"
+)
+
+type ActionResult struct {
+	Status           ActionResultStatus `json:"status"`
+	ErrorCode        ErrorCode          `json:"error_code,omitempty"`
+	ErrorDescription string             `json:"error_description,omitempty"`
+}
+
+type CapabilityResponse struct {
+	Type  CapabilityType          `json:"type"`
+	State CapabilityResponseState `json:"state"`
+}
+
+type CapabilityResponseState struct {
+	Instance     string       `json:"instance"`
+	ActionResult ActionResult `json:"action_result"`
+}
+
 type CapabilityOnOff struct {
 	Type        CapabilityType            `json:"type"`
 	Retrievable bool                      `json:"retrievable"`
@@ -121,4 +152,17 @@ type PropertiesFloatParametersTemperature struct {
 type PropertiesFloatState struct {
 	Instance PropertiesFloatParametersInstance `json:"instance"`
 	Value    float32                           `json:"value"`
+}
+
+type DeviceRequest struct {
+	ID           string            `json:"id"`
+	CustomData   map[string]string `json:"custom_data"`
+	Capabilities []struct {
+		Type  CapabilityType `json:"type"`
+		State struct {
+			Instance string      `json:"instance"`
+			Value    interface{} `json:"value"`
+			Relative bool        `json:"relative"`
+		}
+	} `json:"capabilities"`
 }
