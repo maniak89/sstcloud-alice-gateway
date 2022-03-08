@@ -2,6 +2,7 @@ package oauth2
 
 import (
 	"context"
+	"io"
 	"net/http"
 	"time"
 
@@ -72,11 +73,22 @@ func (s *service) Init(ctx context.Context) error {
 	})
 
 	srv.SetUserAuthorizationHandler(func(w http.ResponseWriter, r *http.Request) (userID string, err error) {
-		userID = r.URL.Query().Get("client_id")
-		if userID == "" {
-			return "", errors.New("empty client id")
+		switch r.Method {
+		case http.MethodGet:
+			userID = r.URL.Query().Get("client_id")
+			if userID == "" {
+				return "", errors.New("empty client id")
+			}
+			return userID, nil
 		}
-		return userID, nil
+		logger := log.Ctx(r.Context())
+		blob, err := io.ReadAll(r.Body)
+		if err != nil {
+			logger.Error().Err(err).Msg("Failed read body")
+			return "", err
+		}
+		logger.Debug().Bytes("body", blob).Interface("headers", r.Header).Msg("Can't do auth")
+		return "", errors.New("unknown how fix it")
 	})
 
 	return nil
