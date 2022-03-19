@@ -74,6 +74,7 @@ func (s *service) Init(ctx context.Context) error {
 	})
 
 	srv.SetUserAuthorizationHandler(func(w http.ResponseWriter, r *http.Request) (userID string, err error) {
+		logger := log.Ctx(r.Context())
 		switch r.Method {
 		case http.MethodGet:
 			userID = r.URL.Query().Get("client_id")
@@ -81,8 +82,17 @@ func (s *service) Init(ctx context.Context) error {
 				return "", errors.New("empty client id")
 			}
 			return userID, nil
+		case http.MethodPost:
+			if err := r.ParseForm(); err != nil {
+				logger.Error().Err(err).Msg("Failed parse form")
+				return "", err
+			}
+			userID = r.Form.Get("client_id")
+			if userID == "" {
+				return "", errors.New("empty client id")
+			}
+			return userID, nil
 		}
-		logger := log.Ctx(r.Context())
 		blob, err := io.ReadAll(r.Body)
 		if err != nil {
 			logger.Error().Err(err).Msg("Failed read body")
