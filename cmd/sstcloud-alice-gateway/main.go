@@ -8,18 +8,21 @@ import (
 
 	"github.com/joeshaw/envdecode"
 	_ "github.com/joho/godotenv/autoload"
+	"github.com/oklog/run"
+	zerolog "github.com/rs/zerolog/log"
+
 	"github.com/maniak89/sstcloud-alice-gateway/internal/log"
 	"github.com/maniak89/sstcloud-alice-gateway/internal/services"
 	"github.com/maniak89/sstcloud-alice-gateway/internal/services/rest"
+	"github.com/maniak89/sstcloud-alice-gateway/internal/services/rest/handlers/oauth2/mongo"
 	"github.com/maniak89/sstcloud-alice-gateway/internal/services/sst"
-	"github.com/oklog/run"
-	zerolog "github.com/rs/zerolog/log"
 )
 
 type config struct {
-	Logger log.Config
-	SST    sst.Config
-	Rest   rest.Config
+	Logger  log.Config
+	SST     sst.Config
+	Rest    rest.Config
+	Storage mongo.Config
 }
 
 const signalChLen = 10

@@ -9,11 +9,12 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/jwtauth/v5"
-	"github.com/maniak89/sstcloud-alice-gateway/internal/models/common"
-	"github.com/maniak89/sstcloud-alice-gateway/internal/services/rest/handlers/oauth2"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/hlog"
 	"github.com/rs/zerolog/log"
+
+	"github.com/maniak89/sstcloud-alice-gateway/internal/models/common"
+	"github.com/maniak89/sstcloud-alice-gateway/internal/services/rest/handlers/oauth2"
 )
 
 type service struct {
@@ -47,11 +48,13 @@ func New(ctx context.Context, config Config, log zerolog.Logger, provider Device
 		deviceProvider: provider,
 		srv:            &http.Server{Addr: config.Address, Handler: r},
 	}
+
 	oauthSrv := oauth2.New(config.OAUTH2)
-	if err := oauthSrv.Init(ctx); err != nil {
-		return nil, err
-	}
 	if config.OAUTH2.Enabled {
+		if err := oauthSrv.Init(ctx); err != nil {
+			return nil, err
+		}
+
 		r.Route("/oauth2", func(r chi.Router) {
 			r.Mount("/authorize", http.HandlerFunc(oauthSrv.Authorize))
 			r.Mount("/token", http.HandlerFunc(oauthSrv.Token))

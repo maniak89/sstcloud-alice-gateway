@@ -6,6 +6,8 @@ import (
 	"errors"
 
 	"github.com/rs/zerolog/log"
+
+	"github.com/maniak89/sstcloud-alice-gateway/internal/services/rest/handlers/oauth2/mongo"
 )
 
 type Config struct {
@@ -16,7 +18,7 @@ type Config struct {
 	UserID                string `env:"OAUTH2_USER_ID"`
 	UserSecret            string `env:"OAUTH2_USER_SECRET"`
 	UserDomain            string `env:"OAUTH2_USER_DOMAIN,default=http://localhost"`
-	TokenFile             string `env:"OAUTH2_TOKEN_STORE_FILE,default=tokens"`
+	Storage               mongo.Config
 }
 
 func (c Config) Validate() error {
@@ -31,6 +33,12 @@ func (c Config) Validate() error {
 	}
 	if c.UserSecret == "" {
 		return errors.New("empty OAUTH2_USER_SECRET")
+	}
+	if c.Storage.URI == "" {
+		return errors.New("empty MONGO_DB_URI")
+	}
+	if c.Storage.Name == "" {
+		return errors.New("empty MONGO_DB_NAME")
 	}
 	return nil
 }
