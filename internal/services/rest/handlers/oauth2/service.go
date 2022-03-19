@@ -1,6 +1,7 @@
 package oauth2
 
 import (
+	"bytes"
 	"context"
 	"io"
 	"net/http"
@@ -102,6 +103,16 @@ func (s *service) Authorize(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *service) Token(w http.ResponseWriter, r *http.Request) {
+	logger := log.Ctx(r.Context())
+	bodyRaw, err := io.ReadAll(r.Body)
+	if err != nil {
+		logger.Error().Err(err).Msg("Failed read body")
+		return
+	}
+	defer r.Body.Close()
+	logger.Trace().Bytes("body", bodyRaw).Interface("headers", r.Header).Msg("Got request")
+	r.Body = io.NopCloser(bytes.NewReader(bodyRaw))
+
 	if err := s.server.HandleTokenRequest(w, r); err != nil {
 		log.Ctx(r.Context()).Error().Err(err).Msg("Failed authorize")
 		http.Error(w, err.Error(), http.StatusBadRequest)
