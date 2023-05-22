@@ -126,4 +126,5 @@ func (w *linkWorker) updateHouses(ctx context.Context, houses []*device_provider
 		v.markAllOffline(ctx)
 		v.stop(ctx)
 	}
+	w.workerMap = workerMap
 }
