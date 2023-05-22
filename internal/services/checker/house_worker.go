@@ -32,8 +32,6 @@ func newHouseWorker(config Config, provider device_provider.DeviceProvider, hous
 }
 
 func (w *houseWorker) run(ctx context.Context) {
-	logger := log.Ctx(ctx).With().Int("house_id", w.house.ID).Logger()
-	ctx = logger.WithContext(ctx)
 	ctx, w.cancelFunc = context.WithCancel(ctx)
 	defer w.cancelFunc()
 

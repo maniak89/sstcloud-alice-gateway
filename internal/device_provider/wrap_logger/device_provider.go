@@ -4,9 +4,17 @@ import (
 	"context"
 	"strconv"
 	"sync"
+	"time"
+
+	"github.com/patrickmn/go-cache"
 
 	"sstcloud-alice-gateway/internal/device_provider"
 	"sstcloud-alice-gateway/internal/models/storage"
+)
+
+const (
+	cacheDuration  = time.Minute * 5
+	cacheKeyHouses = "house"
 )
 
 type wrapper struct {
@@ -16,6 +24,8 @@ type wrapper struct {
 	userID  string
 	isInit  bool
 	isInitM sync.Mutex
+	callM   sync.Mutex
+	cache   *cache.Cache
 }
 
 type Logger interface {
@@ -28,6 +38,7 @@ func New(child device_provider.DeviceProvider, userID, linkID string, logger Log
 		logger: logger,
 		linkID: linkID,
 		userID: userID,
+		cache:  cache.New(cacheDuration, cacheDuration/2),
 	}
 }
 
@@ -51,6 +62,15 @@ func (w *wrapper) Init(ctx context.Context) error {
 }
 
 func (w *wrapper) Houses(ctx context.Context) ([]*device_provider.House, error) {
+	cacheKey := cacheKeyHouses
+	{
+		obj, exists := w.cache.Get(cacheKey)
+		if exists {
+			return obj.([]*device_provider.House), nil
+		}
+	}
+	w.callM.Lock()
+	defer w.callM.Unlock()
 	if err := w.insure(ctx); err != nil {
 		return nil, err
 	}
@@ -63,9 +83,19 @@ func (w *wrapper) Houses(ctx context.Context) ([]*device_provider.House, error) 
 		r.DeviceProvider = w
 		r.UserID = w.userID
 	}
+	w.cache.Set(cacheKey, result, cache.DefaultExpiration)
 	return result, nil
 }
 func (w *wrapper) Devices(ctx context.Context, house *device_provider.House) ([]*device_provider.Device, error) {
+	cacheKey := cacheKeyHouses + strconv.Itoa(house.ID)
+	{
+		obj, exists := w.cache.Get(cacheKey)
+		if exists {
+			return obj.([]*device_provider.Device), nil
+		}
+	}
+	w.callM.Lock()
+	defer w.callM.Unlock()
 	if err := w.insure(ctx); err != nil {
 		return nil, err
 	}
@@ -75,6 +105,7 @@ func (w *wrapper) Devices(ctx context.Context, house *device_provider.House) ([]
 		return nil, err
 	}
 	w.logger.Log(ctx, w.linkID, storage.Info, "Success get devices. Total "+strconv.Itoa(len(result)))
+	w.cache.Set(cacheKey, result, cache.DefaultExpiration)
 	return result, nil
 }
 

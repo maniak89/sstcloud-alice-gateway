@@ -100,7 +100,7 @@ func (s *storage) Links(ctx context.Context) ([]*storageModels.Link, error) {
 }
 
 func (s *storage) Log(ctx context.Context, linkID string, level storageModels.LogLevel, msg string) {
-	logger := log.Ctx(ctx).With().Str("link_id", linkID).Str("level", string(level)).Str("msg", msg).Logger()
+	logger := log.Ctx(ctx).With().Str("level", string(level)).Str("msg", msg).Logger()
 	switch level {
 	case storageModels.Error:
 		logger.Error().Msg("")
