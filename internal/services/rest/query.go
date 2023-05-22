@@ -3,6 +3,7 @@ package rest
 import (
 	"encoding/json"
 	"net/http"
+	"strings"
 
 	"github.com/rs/zerolog/log"
 
@@ -20,20 +21,20 @@ func (s *service) Query(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	devices, _, err := s.devices(ctx)
-	if err != nil {
-		logger.Error().Err(err).Msg("Failed get devices")
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
+	devices := s.deviceProvider.Devices(user.User(ctx))
 
 	aliceDevices := alice.Devices{
 		UserID:  user.User(ctx),
 		Devices: make([]alice.Device, 0, len(devices)),
 	}
 	for _, reqDev := range req.Devices {
+		id := reqDev.ID
+		parts := strings.Split(reqDev.ID, "_")
+		if len(parts) == 3 {
+			id = strings.Join(parts[0:2], "_")
+		}
 		for _, dev := range devices {
-			if dev.ID != mappers.ExtractDeviceID(reqDev.ID) {
+			if dev.IDStr != id {
 				continue
 			}
 			newDevices := mappers.DeviceToAlice(dev)

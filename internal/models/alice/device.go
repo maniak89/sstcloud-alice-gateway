@@ -1,5 +1,9 @@
 package alice
 
+import (
+	"time"
+)
+
 type DeviceType string
 
 const (
@@ -15,7 +19,7 @@ type Device struct {
 	Type         DeviceType        `json:"type"`
 	CustomData   map[string]string `json:"custom_data,omitempty"`
 	Capabilities []interface{}     `json:"capabilities,omitempty"`
-	Properties   []interface{}     `json:"properties,omitempty"`
+	Properties   []Property        `json:"properties,omitempty"`
 	DeviceInfo   *DeviceInfo       `json:"device_info,omitempty"`
 }
 
@@ -101,7 +105,7 @@ type CapabilityRangeStateTemperature struct {
 
 type CapabilityRangeParametersTemperature struct {
 	Instance     CapabilityRangeInstance        `json:"instance"`
-	Unit         UnitTemperature                `json:"unit"`
+	Unit         PropertyParameterUnit          `json:"unit"`
 	RandomAccess bool                           `json:"random_access"`
 	Range        CapabilityRangeParametersRange `json:"range"`
 }
@@ -112,46 +116,58 @@ const (
 	CapabilityRangeInstanceTemperature CapabilityRangeInstance = "temperature"
 )
 
-type UnitTemperature string
-
-const (
-	UnitCelsius UnitTemperature = "unit.temperature.celsius"
-)
-
 type CapabilityRangeParametersRange struct {
 	Min       float32 `json:"min,omitempty"`
 	Max       float32 `json:"max,omitempty"`
 	Precision float32 `json:"precision,omitempty"`
 }
 
-type PropertiesType string
+type PropertyType string
 
 const (
-	PropertiesTypeFloat PropertiesType = "devices.properties.float"
+	PropertyTypeFloat PropertyType = "devices.properties.float"
 )
 
-type PropertiesFloat struct {
-	Type        PropertiesType       `json:"type"`
-	Retrievable bool                 `json:"retrievable,omitempty"`
-	Reportable  bool                 `json:"reportable,omitempty"`
-	Parameters  interface{}          `json:"parameters"`
-	State       PropertiesFloatState `json:"state"`
-}
-
-type PropertiesFloatParametersInstance string
+type PropertyParameterValueValue string
 
 const (
-	PropertiesFloatParametersInstanceTemperature PropertiesFloatParametersInstance = "temperature"
+	PropertyParameterInstanceGasDetected    PropertyParameterValueValue = "detected"
+	PropertyParameterInstanceGasNotDetected PropertyParameterValueValue = "not_detected"
 )
 
-type PropertiesFloatParametersTemperature struct {
-	Instance PropertiesFloatParametersInstance `json:"instance"`
-	Unit     UnitTemperature                   `json:"unit"`
+type PropertyParameterValue struct {
+	Value PropertyParameterValueValue `json:"value"`
+	Name  string                      `json:"name"`
 }
 
-type PropertiesFloatState struct {
-	Instance PropertiesFloatParametersInstance `json:"instance"`
-	Value    float32                           `json:"value"`
+type PropertyParameterInstance string
+
+const (
+	PropertyParameterInstanceGas         = "gas"
+	PropertyParameterInstanceTemperature = "temperature"
+)
+
+type PropertyParameterUnit string
+
+const (
+	PropertyParameterUnitUnknown PropertyParameterUnit = ""
+	PropertyParameterUnitCelsius PropertyParameterUnit = "unit.celsius"
+)
+
+type PropertyParameter struct {
+	Instance PropertyParameterInstance `json:"instance"`
+	Events   []PropertyParameterValue  `json:"events,omitempty"`
+	Unit     PropertyParameterUnit     `json:"unit,omitempty"`
+}
+
+type Property struct {
+	Type           PropertyType                      `json:"type"`
+	Retrievable    bool                              `json:"retrievable"`
+	Reportable     bool                              `json:"reportable"`
+	Parameters     PropertyParameter                 `json:"parameters"`
+	State          PayloadStateDevicePropertiesState `json:"state"`
+	StateChangedAt time.Time                         `json:"state_changed_at"`
+	LastUpdated    time.Time                         `json:"last_updated"`
 }
 
 type DeviceRequest struct {

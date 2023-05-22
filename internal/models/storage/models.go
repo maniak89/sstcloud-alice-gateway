@@ -20,6 +20,12 @@ func (s *Link) BeforeUpdate() error {
 	return nil
 }
 
+func (s *Link) Equal(o *Link) bool {
+	return s.ID == o.ID &&
+		s.SSTEmail == o.SSTEmail &&
+		s.SSTPassword == o.SSTPassword
+}
+
 type LogLevel string
 
 const (

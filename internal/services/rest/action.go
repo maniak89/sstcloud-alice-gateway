@@ -21,11 +21,7 @@ func (s *service) Action(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	devices, deviceMap, err := s.devices(ctx)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
+	devices := s.deviceProvider.Devices(user.User(ctx))
 
 	aliceDevices := alice.Devices{
 		UserID:  user.User(ctx),
@@ -33,13 +29,13 @@ func (s *service) Action(w http.ResponseWriter, r *http.Request) {
 	}
 	for _, reqDev := range req.Payload.Devices {
 		for _, dev := range devices {
-			if dev.ID != reqDev.ID {
+			if dev.IDStr != reqDev.ID {
 				continue
 			}
 			aliceDevice := alice.Device{
-				ID: dev.ID,
+				ID: dev.IDStr,
 			}
-			logger := log.With().Str("device_id", dev.ID).Logger()
+			logger := log.With().Int("house_id", dev.House.ID).Int("device_id", dev.ID).Logger()
 			for _, capability := range reqDev.Capabilities {
 				logger := logger.With().Str("capability_type", string(capability.Type)).Logger()
 
@@ -48,7 +44,7 @@ func (s *service) Action(w http.ResponseWriter, r *http.Request) {
 				}
 				switch capability.Type {
 				case alice.CapabilityTypeOnOff:
-					if err := deviceMap[reqDev.ID].PowerStatus(ctx, mappers.DeviceFromAlice(reqDev), capability.State.Value.(bool)); err != nil {
+					if err := dev.PowerStatus(ctx, capability.State.Value.(bool)); err != nil {
 						logger.Error().Err(err).Msg("Failed set status")
 						actionResult = alice.ActionResult{
 							Status:           alice.ActionResultStatusError,
@@ -57,7 +53,7 @@ func (s *service) Action(w http.ResponseWriter, r *http.Request) {
 						}
 					}
 				case alice.CapabilityTypeRange:
-					if capability.State.Instance != string(alice.PropertiesFloatParametersInstanceTemperature) {
+					if capability.State.Instance != alice.PropertyParameterInstanceTemperature {
 						actionResult = alice.ActionResult{
 							Status:           alice.ActionResultStatusError,
 							ErrorCode:        alice.ErrorCodeInvalidAction,
@@ -74,7 +70,7 @@ func (s *service) Action(w http.ResponseWriter, r *http.Request) {
 								ErrorCode:        alice.ErrorCodeInvalidAction,
 								ErrorDescription: fmt.Sprintf("value %d not in range %d-%d", value, mappers.MinTemp, mappers.MaxTemp),
 							}
-						} else if err := deviceMap[reqDev.ID].SetTemperature(ctx, mappers.DeviceFromAlice(reqDev), value); err != nil {
+						} else if err := dev.SetTemperature(ctx, value); err != nil {
 							logger.Error().Err(err).Msg("Failed set status")
 							actionResult = alice.ActionResult{
 								Status:           alice.ActionResultStatusError,

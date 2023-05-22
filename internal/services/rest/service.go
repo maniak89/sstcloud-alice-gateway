@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"net/http"
-	"sync"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -19,19 +18,19 @@ import (
 )
 
 type service struct {
-	config           Config
-	srv              *http.Server
-	storage          storage.Storage
-	deviceProviders  map[string][]device_provider.DeviceProvider
-	deviceProvidersM sync.Mutex
-	factory          DeviceProviderFactory
+	config         Config
+	srv            *http.Server
+	storage        storage.Storage
+	deviceProvider DeviceProvider
 }
 
-type DeviceProviderFactory func(linkID, email, password string) device_provider.DeviceProvider
+type DeviceProvider interface {
+	Devices(userID string) []*device_provider.Device
+}
 
 const xRequestID = "X-Request-Id"
 
-func New(ctx context.Context, config Config, log zerolog.Logger, storage storage.Storage, factory DeviceProviderFactory) (*service, error) {
+func New(ctx context.Context, config Config, log zerolog.Logger, storage storage.Storage, deviceProvider DeviceProvider) (*service, error) {
 	r := chi.NewRouter()
 	r.Use(
 		hlog.NewHandler(log),
@@ -45,11 +44,10 @@ func New(ctx context.Context, config Config, log zerolog.Logger, storage storage
 		user.Middleware,
 	)
 	service := service{
-		config:          config,
-		deviceProviders: map[string][]device_provider.DeviceProvider{},
-		srv:             &http.Server{Addr: config.Address, Handler: r},
-		factory:         factory,
-		storage:         storage,
+		config:         config,
+		deviceProvider: deviceProvider,
+		srv:            &http.Server{Addr: config.Address, Handler: r},
+		storage:        storage,
 	}
 
 	r.Route("/v1.0", func(r chi.Router) {
@@ -91,39 +89,4 @@ func (s *service) Shutdown(ctx context.Context) error {
 	}
 
 	return nil
-}
-
-func (s *service) fetchDeviceProviders(ctx context.Context, userID string) ([]device_provider.DeviceProvider, error) {
-	logger := log.Ctx(ctx)
-
-	s.deviceProvidersM.Lock()
-	defer s.deviceProvidersM.Unlock()
-	devices := s.deviceProviders[userID]
-
-	links, err := s.storage.Links(ctx, userID)
-	if err != nil {
-		logger.Error().Err(err).Msg("Failed fetch links")
-		return nil, err
-	}
-	result := make([]device_provider.DeviceProvider, 0, len(devices))
-	for _, link := range links {
-		var found bool
-		for i, device := range devices {
-			if device.EMail() == link.SSTEmail {
-				if device.Password() == link.SSTPassword {
-					found = true
-					result = append(result, device)
-					break
-				}
-				devices = append(devices[:i], devices[i+1:]...)
-				break
-			}
-		}
-		if found {
-			continue
-		}
-		result = append(result, s.factory(link.ID, link.SSTEmail, link.SSTPassword))
-	}
-	s.deviceProviders[userID] = result
-	return result, nil
 }

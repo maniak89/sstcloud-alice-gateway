@@ -15,16 +15,20 @@ import (
 	"sstcloud-alice-gateway/internal/device_provider/sst"
 	"sstcloud-alice-gateway/internal/device_provider/wrap_logger"
 	"sstcloud-alice-gateway/internal/log"
+	"sstcloud-alice-gateway/internal/notifier/alice"
 	"sstcloud-alice-gateway/internal/services"
+	"sstcloud-alice-gateway/internal/services/checker"
 	"sstcloud-alice-gateway/internal/services/rest"
 	"sstcloud-alice-gateway/internal/storage/sql"
 )
 
 type config struct {
-	Logger  log.Config
-	SST     sst.Config
-	Rest    rest.Config
-	Storage sql.Config
+	Logger   log.Config
+	SST      sst.Config
+	Rest     rest.Config
+	Storage  sql.Config
+	Checker  checker.Config
+	Notifier alice.Config
 }
 
 const signalChLen = 10
@@ -68,9 +72,14 @@ func main() {
 		}
 	}()
 
-	restService, err := rest.New(ctx, cfg.Rest, logger.With().Str("role", "rest").Logger(), storage, func(linkID, email, password string) device_provider.DeviceProvider {
-		return wrap_logger.New(sst.New(sst.Config{Password: password, EMail: email, Config: cfg.SST.Config}), linkID, storage)
-	})
+	notifier := alice.New(cfg.Notifier)
+	checkerInstance := checker.New(cfg.Checker, storage, func(userID, linkID, email, password string) device_provider.DeviceProvider {
+		return wrap_logger.New(sst.New(sst.Config{Password: password, EMail: email, Config: cfg.SST.Config}), userID, linkID, storage)
+	}, notifier)
+	if err := orderRunner.SetupService(ctx, checkerInstance, "checker", g); err != nil {
+		logger.Fatal().Err(err).Msg("Failed setup checker service")
+	}
+	restService, err := rest.New(ctx, cfg.Rest, logger.With().Str("role", "rest").Logger(), storage, checkerInstance)
 	if err != nil {
 		logger.Fatal().Err(err).Msg("Failed create rest service")
 	}

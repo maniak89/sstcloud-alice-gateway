@@ -3,8 +3,8 @@ package mappers
 import (
 	"strings"
 
+	"sstcloud-alice-gateway/internal/device_provider"
 	"sstcloud-alice-gateway/internal/models/alice"
-	"sstcloud-alice-gateway/internal/models/common"
 )
 
 const (
@@ -18,19 +18,16 @@ const (
 	AdditionalSensorFloor = "floor"
 )
 
-func DeviceToAlice(device common.Device) []alice.Device {
-	result := alice.Device{
-		ID:   device.ID,
+func DeviceToAlice(device *device_provider.Device) []alice.Device {
+	result := []alice.Device{{
+		ID:   device.IDStr,
 		Name: device.Name,
 		DeviceInfo: &alice.DeviceInfo{
 			Model: device.Model,
 		},
 		CustomData: device.AdditionalFields,
-	}
-	var additionalDevices []alice.Device
-	if device.Tempometer != nil {
-		result.Type = alice.DeviceTypeThermostat
-		result.Capabilities = []interface{}{
+		Type:       alice.DeviceTypeThermostat,
+		Capabilities: []interface{}{
 			alice.CapabilityOnOff{
 				Type:        alice.CapabilityTypeOnOff,
 				Retrievable: true,
@@ -47,7 +44,7 @@ func DeviceToAlice(device common.Device) []alice.Device {
 				Retrievable: true,
 				Parameters: alice.CapabilityRangeParametersTemperature{
 					Instance:     alice.CapabilityRangeInstanceTemperature,
-					Unit:         alice.UnitCelsius,
+					Unit:         alice.PropertyParameterUnitCelsius,
 					RandomAccess: true,
 					Range: alice.CapabilityRangeParametersRange{
 						Max:       MaxTemp,
@@ -60,10 +57,10 @@ func DeviceToAlice(device common.Device) []alice.Device {
 					Value:    float32(device.Tempometer.SetDegreesFloor),
 				},
 			},
-		}
-
-		additionalDevices = append(additionalDevices, alice.Device{
-			ID:   createDeviceID(device.ID, AdditionalSensorAir),
+		},
+	},
+		{
+			ID:   createDeviceID(device.IDStr, AdditionalSensorAir),
 			Name: device.Name + " температура воздуха",
 			DeviceInfo: &alice.DeviceInfo{
 				Model: device.Model,
@@ -72,22 +69,26 @@ func DeviceToAlice(device common.Device) []alice.Device {
 				AdditionalSensor: AdditionalSensorAir,
 			}),
 			Type: alice.DeviceTypeSensor,
-			Properties: []interface{}{
-				alice.PropertiesFloat{
-					Type:        alice.PropertiesTypeFloat,
+			Properties: []alice.Property{
+				{
+					Type:        alice.PropertyTypeFloat,
 					Retrievable: true,
-					Parameters: alice.PropertiesFloatParametersTemperature{
-						Instance: alice.PropertiesFloatParametersInstanceTemperature,
-						Unit:     alice.UnitCelsius,
+					Reportable:  true,
+					Parameters: alice.PropertyParameter{
+						Instance: alice.PropertyParameterInstanceTemperature,
+						Unit:     alice.PropertyParameterUnitCelsius,
 					},
-					State: alice.PropertiesFloatState{
-						Instance: alice.PropertiesFloatParametersInstanceTemperature,
-						Value:    float32(device.Tempometer.DegreesAir),
+					State: alice.PayloadStateDevicePropertiesState{
+						Instance: alice.PropertyParameterInstanceTemperature,
+						Value:    device.Tempometer.DegreesAir,
 					},
+					LastUpdated:    device.UpdatedAt,
+					StateChangedAt: device.Tempometer.ChangedAtDegreesAir,
 				},
 			},
-		}, alice.Device{
-			ID:   createDeviceID(device.ID, AdditionalSensorFloor),
+		},
+		{
+			ID:   createDeviceID(device.IDStr, AdditionalSensorFloor),
 			Name: device.Name + " температура пола",
 			DeviceInfo: &alice.DeviceInfo{
 				Model: device.Model,
@@ -96,23 +97,26 @@ func DeviceToAlice(device common.Device) []alice.Device {
 				AdditionalSensor: AdditionalSensorFloor,
 			}),
 			Type: alice.DeviceTypeSensor,
-			Properties: []interface{}{
-				alice.PropertiesFloat{
-					Type:        alice.PropertiesTypeFloat,
+			Properties: []alice.Property{
+				{
+					Type:        alice.PropertyTypeFloat,
 					Retrievable: true,
-					Parameters: alice.PropertiesFloatParametersTemperature{
-						Instance: alice.PropertiesFloatParametersInstanceTemperature,
-						Unit:     alice.UnitCelsius,
+					Reportable:  true,
+					Parameters: alice.PropertyParameter{
+						Instance: alice.PropertyParameterInstanceTemperature,
+						Unit:     alice.PropertyParameterUnitCelsius,
 					},
-					State: alice.PropertiesFloatState{
-						Instance: alice.PropertiesFloatParametersInstanceTemperature,
-						Value:    float32(device.Tempometer.DegreesFloor),
+					State: alice.PayloadStateDevicePropertiesState{
+						Instance: alice.PropertyParameterInstanceTemperature,
+						Value:    device.Tempometer.DegreesFloor,
 					},
+					LastUpdated:    device.UpdatedAt,
+					StateChangedAt: device.Tempometer.ChangedAtDegreesFloor,
 				},
 			},
-		})
+		},
 	}
-	return append([]alice.Device{result}, additionalDevices...)
+	return result
 }
 
 func mapMux(m1, m2 map[string]string) map[string]string {
@@ -126,25 +130,6 @@ func mapMux(m1, m2 map[string]string) map[string]string {
 	return result
 }
 
-func ExtractDeviceID(str string) string {
-	parts := strings.Split(str, "_")
-	if len(parts) < 2 {
-		return str
-	}
-	lastPart := parts[len(parts)-1]
-	if lastPart == AdditionalSensorFloor || lastPart == AdditionalSensorAir {
-		return strings.Join(parts[0:len(parts)-1], "_")
-	}
-	return str
-}
-
 func createDeviceID(str1, str2 string) string {
 	return strings.Join([]string{str1, str2}, "_")
-}
-
-func DeviceFromAlice(device alice.DeviceRequest) common.Device {
-	return common.Device{
-		ID:               device.ID,
-		AdditionalFields: device.CustomData,
-	}
 }

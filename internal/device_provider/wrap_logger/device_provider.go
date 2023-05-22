@@ -6,7 +6,6 @@ import (
 	"sync"
 
 	"sstcloud-alice-gateway/internal/device_provider"
-	"sstcloud-alice-gateway/internal/models/common"
 	"sstcloud-alice-gateway/internal/models/storage"
 )
 
@@ -14,6 +13,7 @@ type wrapper struct {
 	child   device_provider.DeviceProvider
 	logger  Logger
 	linkID  string
+	userID  string
 	isInit  bool
 	isInitM sync.Mutex
 }
@@ -22,11 +22,12 @@ type Logger interface {
 	Log(ctx context.Context, linkID string, level storage.LogLevel, msg string)
 }
 
-func New(child device_provider.DeviceProvider, linkID string, logger Logger) device_provider.DeviceProvider {
+func New(child device_provider.DeviceProvider, userID, linkID string, logger Logger) device_provider.DeviceProvider {
 	return &wrapper{
 		child:  child,
 		logger: logger,
 		linkID: linkID,
+		userID: userID,
 	}
 }
 
@@ -49,11 +50,26 @@ func (w *wrapper) Init(ctx context.Context) error {
 	return w.insure(ctx)
 }
 
-func (w *wrapper) Devices(ctx context.Context) ([]common.Device, error) {
+func (w *wrapper) Houses(ctx context.Context) ([]*device_provider.House, error) {
 	if err := w.insure(ctx); err != nil {
 		return nil, err
 	}
-	result, err := w.child.Devices(ctx)
+	result, err := w.child.Houses(ctx)
+	if err != nil {
+		w.logger.Log(ctx, w.linkID, storage.Error, "Failed get houses: "+err.Error())
+		return nil, err
+	}
+	for _, r := range result {
+		r.DeviceProvider = w
+		r.UserID = w.userID
+	}
+	return result, nil
+}
+func (w *wrapper) Devices(ctx context.Context, house *device_provider.House) ([]*device_provider.Device, error) {
+	if err := w.insure(ctx); err != nil {
+		return nil, err
+	}
+	result, err := w.child.Devices(ctx, house)
 	if err != nil {
 		w.logger.Log(ctx, w.linkID, storage.Error, "Failed get devices: "+err.Error())
 		return nil, err
@@ -62,7 +78,7 @@ func (w *wrapper) Devices(ctx context.Context) ([]common.Device, error) {
 	return result, nil
 }
 
-func (w *wrapper) SetTemperature(ctx context.Context, device common.Device, temp int) error {
+func (w *wrapper) SetTemperature(ctx context.Context, device *device_provider.Device, temp int) error {
 	if err := w.insure(ctx); err != nil {
 		return err
 	}
@@ -74,7 +90,7 @@ func (w *wrapper) SetTemperature(ctx context.Context, device common.Device, temp
 	return nil
 }
 
-func (w *wrapper) PowerStatus(ctx context.Context, device common.Device, power bool) error {
+func (w *wrapper) PowerStatus(ctx context.Context, device *device_provider.Device, power bool) error {
 	if err := w.insure(ctx); err != nil {
 		return err
 	}
@@ -84,12 +100,4 @@ func (w *wrapper) PowerStatus(ctx context.Context, device common.Device, power b
 	}
 	w.logger.Log(ctx, w.linkID, storage.Info, "Success set power status on device "+device.String()+" to "+strconv.FormatBool(power))
 	return nil
-}
-
-func (w *wrapper) EMail() string {
-	return w.child.EMail()
-}
-
-func (w *wrapper) Password() string {
-	return w.child.Password()
 }

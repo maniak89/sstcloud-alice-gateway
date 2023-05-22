@@ -85,9 +85,9 @@ func (s *storage) Disconnect(ctx context.Context) error {
 	return nil
 }
 
-func (s *storage) Links(ctx context.Context, userID string) ([]*storageModels.Link, error) {
+func (s *storage) Links(ctx context.Context) ([]*storageModels.Link, error) {
 	logger := log.Ctx(ctx)
-	rows, err := s.db.SelectAllFrom(storageModels.LinkTable, "where user_id = "+s.db.Placeholder(1), userID)
+	rows, err := s.db.SelectAllFrom(storageModels.LinkTable, "")
 	if err != nil {
 		logger.Error().Err(err).Msg("Failed find links")
 		return nil, err
@@ -101,6 +101,15 @@ func (s *storage) Links(ctx context.Context, userID string) ([]*storageModels.Li
 
 func (s *storage) Log(ctx context.Context, linkID string, level storageModels.LogLevel, msg string) {
 	logger := log.Ctx(ctx).With().Str("link_id", linkID).Str("level", string(level)).Str("msg", msg).Logger()
+	switch level {
+	case storageModels.Error:
+		logger.Error().Msg("")
+	case storageModels.Info:
+		logger.Debug().Msg("")
+	}
+	if s.config.LogOnlyErrors && level != storageModels.Error {
+		return
+	}
 	if err := s.db.WithContext(ctx).Insert(&storageModels.Log{
 		LinkID:  linkID,
 		Level:   level,

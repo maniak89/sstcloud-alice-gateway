@@ -10,6 +10,6 @@ import (
 var ErrInvalidState = errors.New("invalid state")
 
 type Storage interface {
-	Links(ctx context.Context, userID string) ([]*storage.Link, error)
+	Links(ctx context.Context) ([]*storage.Link, error)
 	Log(ctx context.Context, linkID string, level storage.LogLevel, msg string)
 }
