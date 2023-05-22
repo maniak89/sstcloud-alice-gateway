@@ -110,9 +110,9 @@ func (w *linkWorker) updateHouses(ctx context.Context, houses []*device_provider
 						w.workerMapM.Unlock()
 						w.wg.Done()
 					}()
-					w.stop(ctx)
+					worker.stop(ctx)
 				}()
-				w.run(ctx)
+				worker.run(ctx)
 			}()
 		}
 		workerMap[house.ID] = worker
