@@ -151,7 +151,7 @@ type PropertyParameterUnit string
 
 const (
 	PropertyParameterUnitUnknown PropertyParameterUnit = ""
-	PropertyParameterUnitCelsius PropertyParameterUnit = "unit.celsius"
+	PropertyParameterUnitCelsius PropertyParameterUnit = "unit.temperature.celsius"
 )
 
 type PropertyParameter struct {
