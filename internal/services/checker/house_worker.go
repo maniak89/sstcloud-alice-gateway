@@ -72,40 +72,26 @@ func (w *houseWorker) updateDevices(ctx context.Context, devices []*device_provi
 	for _, device := range w.getState() {
 		savedDeviceMap[device.ID] = device
 	}
-	var notify []*device_provider.Device
 	for _, device := range devices {
 		savedDevice, exists := savedDeviceMap[device.ID]
 		if !exists {
 			continue
 		}
-		changed := savedDevice.Enabled != device.Enabled ||
-			savedDevice.Connected != device.Connected ||
-			savedDevice.Name != device.Name ||
-			savedDevice.House.Name != device.House.Name
 
-		if savedDevice.Tempometer.DegreesFloor != device.Tempometer.DegreesFloor {
-			changed = true
-		} else {
+		if savedDevice.Tempometer.DegreesFloor == device.Tempometer.DegreesFloor {
 			device.Tempometer.ChangedAtDegreesFloor = savedDevice.Tempometer.ChangedAtDegreesFloor
 		}
-		if savedDevice.Tempometer.DegreesAir != device.Tempometer.DegreesAir {
-			changed = true
-		} else {
+		if savedDevice.Tempometer.DegreesAir == device.Tempometer.DegreesAir {
 			device.Tempometer.ChangedAtDegreesAir = savedDevice.Tempometer.ChangedAtDegreesAir
 		}
-		if savedDevice.Tempometer.SetDegreesFloor != device.Tempometer.SetDegreesFloor {
-			changed = true
-		} else {
+		if savedDevice.Tempometer.SetDegreesFloor == device.Tempometer.SetDegreesFloor {
 			device.Tempometer.ChangedAtSetDegreesFloor = savedDevice.Tempometer.ChangedAtSetDegreesFloor
-		}
-		if changed {
-			notify = append(notify, device)
 		}
 	}
 	w.stateM.Lock()
 	w.state = devices
 	w.stateM.Unlock()
-	w.notify(ctx, notify)
+	w.notify(ctx, devices)
 }
 
 func (w *houseWorker) markAllOffline(ctx context.Context) {
